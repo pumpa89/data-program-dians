@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ symbol }} Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <h1>{{ symbol }} Stock Analysis</h1>
+    
+    <div id="priceChart" style="width:800px;height:400px;"></div>
+    <div id="volumeChart" style="width:800px;height:400px;"></div>
+    
+    <h2>Key Metrics</h2>
+    <table border="1">
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Current Price</td>
+            <td>{{ report.last_price }}</td>
+        </tr>
+        <tr>
+            <td>30-Day Average</td>
+            <td>{{ report['30_day_avg'] }}</td>
+        </tr>
+        <tr>
+            <td>30-Day High</td>
+            <td>{{ report['30_day_high'] }}</td>
+        </tr>
+        <tr>
+            <td>30-Day Low</td>
+            <td>{{ report['30_day_low'] }}</td>
+        </tr>
+        <tr>
+            <td>Next Day Prediction</td>
+            <td>{{ prediction.prediction }}</td>
+        </tr>
+    </table>
+    
+    <script>
+        // Example Plotly chart
+        var priceData = {
+            x: [/* time data */],
+            y: [/* price data */],
+            type: 'line',
+            name: 'Price'
+        };
+        
+        Plotly.newPlot('priceChart', [priceData]);
+        
+        // Example D3.js chart
+        var volumeData = [/* volume data */];
+        
+        var svg = d3.select("#volumeChart")
+            .append("svg")
+            .attr("width", 800)
+            .attr("height", 400);
+            
+        svg.selectAll("rect")
+            .data(volumeData)
+            .enter()
+            .append("rect")
+            .attr("x", (d,i) => i * 30)
+            .attr("y", d => 400 - d)
+            .attr("width", 25)
+            .attr("height", d => d)
+            .attr("fill", "steelblue");
+    </script>
+</body>
+</html>

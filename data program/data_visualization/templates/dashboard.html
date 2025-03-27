@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoFinance Dashboard</title>
+    <!-- CSS Libraries -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+   <script>
+  // Connect to the WebSocket server running in Docker
+  const ws = new WebSocket('ws://localhost:8765');
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    document.getElementById("price").innerHTML = `$${data.close}`;
+    document.getElementById("symbol").innerHTML = data.symbol;
+  };
+</script>
+    <style>
+        :root {
+            --bg-dark: #121826;
+            --bg-darker: #0d111c;
+            --bg-card: #1a2035;
+            --accent-primary: #6c5ce7;
+            --accent-secondary: #00cec9;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --positive: #00b894;
+            --negative: #d63031;
+            --border-radius: 12px;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+        
+        .col-3 { grid-column: span 3; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-8 { grid-column: span 8; }
+        .col-12 { grid-column: span 12; }
+        
+        .indicator {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .indicator:last-child {
+            border-bottom: none;
+        }
+        
+        .indicator-name {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .indicator-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .positive { color: var(--positive); }
+        .negative { color: var(--negative); }
+        
+        .chart-container {
+            height: 300px;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .mini-chart {
+            height: 40px;
+            width: 80px;
+        }
+        
+        .stock-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .stock-card:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stock-symbol {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .stock-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .stock-price {
+            text-align: right;
+        }
+        
+        .price-value {
+            font-weight: 600;
+        }
+        
+        .price-change {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        .search-bar {
+            background-color: var(--bg-darker);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: var(--text-primary);
+            width: 300px;
+            font-size: 14px;
+        }
+        
+        .search-bar:focus {
+            outline: 1px solid var(--accent-primary);
+        }
+        
+        .time-filter {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .time-btn {
+            background-color: var(--bg-darker);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .time-btn.active {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+        
+        .refresh-btn {
+            background-color: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        
+        .status-bar {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--positive);
+        }
+        
+        .status-indicator.closed {
+            background-color: var(--negative);
+        }
+        
+        @media (max-width: 1200px) {
+            .col-3, .col-4, .col-6, .col-8 {
+                grid-column: span 12;
+            }
+            
+            .grid {
+                gap: 15px;
+            }
+            
+            .search-bar {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span class="mdi mdi-finance"></span>
+                <span>NeoFinance</span>
+            </div>
+            
+            <input type="text" class="search-bar" placeholder="Search stocks, indices...">
+            
+            <div class="status-bar">
+                <div class="market-status">
+                    <div class="status-indicator"></div>
+                    <span>Market Open</span>
+                </div>
+                <div id="last-updated">Last updated: --:--:--</div>
+                <button class="refresh-btn" id="refresh-btn">
+                    <span class="mdi mdi-refresh"></span>
+                    Refresh
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Grid -->
+        <div class="grid">
+            <!-- Market Overview -->
+            <div class="card col-3">
+                <div class="card-title">
+                    <span class="mdi mdi-chart-line"></span>
+                    Market Overview
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">S&P 500</span>
+                    <div>
+                        <div class="indicator-value" id="sp500-price">4,567.89</div>
+                        <div class="indicator-change positive" id="sp500-change">+12.34 (0.27%)</div>
+                    </div>
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">NASDAQ</span>
+                    <div>
+                        <div class="indicator-value" id="nasdaq-price">14,256.78</div>
+                        <div class="indicator-change positive" id="nasdaq-change">+45.67 (0.32%)</div>
+                    </div>
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">Dow Jones</span>
+                    <div>
+                        <div class="indicator-value" id="dow-price">34,567.89</div>
+                        <div class="indicator-change negative" id="dow-change">-23.45 (0.07%)</div>
+                    </div>
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">VIX</span>
+                    <div>
+                        <div class="indicator-value" id="vix-price">15.67</div>
+                        <div class="indicator-change negative" id="vix-change">-0.45 (2.79%)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Portfolio Summary -->
+            <div class="card col-3">
+                <div class="card-title">
+                    <span class="mdi mdi-wallet"></span>
+                    Portfolio
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">Total Value</span>
+                    <div class="indicator-value">$128,456.78</div>
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">Today's Change</span>
+                    <div>
+                        <div class="indicator-value positive">+$1,234.56</div>
+                        <div class="indicator-change positive">+0.97%</div>
+                    </div>
+                </div>
+                <div class="indicator">
+                    <span class="indicator-name">All Time Return</span>
+                    <div>
+                        <div class="indicator-value positive">+$28,456.78</div>
+                        <div class="indicator-change positive">+28.45%</div>
+                    </div>
+                </div>
+                <div id="portfolio-chart" class="mini-chart"></div>
+            </div>
+            
+            <!-- Asset Allocation -->
+            <div class="card col-3">
+                <div class="card-title">
+                    <span class="mdi mdi-pie-chart"></span>
+                    Asset Allocation
+                </div>
+                <div id="allocation-chart" class="chart-container"></div>
+            </div>
+            
+            <!-- Watchlist -->
+            <div class="card col-3">
+                <div class="card-title">
+                    <span class="mdi mdi-star"></span>
+                    Watchlist
+                </div>
+                <div id="watchlist">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Main Price Chart -->
+            <div class="card col-8">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="card-title">
+                        <span class="mdi mdi-chart-areaspline"></span>
+                        <span id="chart-title">AAPL - Apple Inc.</span>
+                    </div>
+                    <div class="time-filter">
+                        <button class="time-btn active" data-time="1d">1D</button>
+                        <button class="time-btn" data-time="1w">1W</button>
+                        <button class="time-btn" data-time="1m">1M</button>
+                        <button class="time-btn" data-time="3m">3M</button>
+                        <button class="time-btn" data-time="1y">1Y</button>
+                    </div>
+                </div>
+                <div id="main-chart" class="chart-container"></div>
+            </div>
+            
+            <!-- Technical Indicators -->
+            <div class="card col-4">
+                <div class="card-title">
+                    <span class="mdi mdi-chart-bar"></span>
+                    Technical Indicators
+                </div>
+                <div id="indicators-chart" class="chart-container"></div>
+            </div>
+            
+            <!-- Sector Performance -->
+            <div class="card col-6">
+                <div class="card-title">
+                    <span class="mdi mdi-chart-arc"></span>
+                    Sector Performance
+                </div>
+                <div id="sector-chart" class="chart-container"></div>
+            </div>
+            
+            <!-- Top Movers -->
+            <div class="card col-6">
+                <div class="card-title">
+                    <span class="mdi mdi-trending-up"></span>
+                    Top Movers
+                </div>
+                <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">Gainers</div>
+                        <div id="gainers-list">
+                            <!-- Filled by JavaScript -->
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">Losers</div>
+                        <div id="losers-list">
+                            <!-- Filled by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- News Feed -->
+            <div class="card col-12">
+                <div class="card-title">
+                    <span class="mdi mdi-newspaper"></span>
+                    Financial News
+                </div>
+                <div id="news-feed" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    
+    <!-- Dashboard JavaScript -->
+    <script>
+        // Global variables
+        let currentSymbol = 'AAPL';
+        let currentTimeRange = '1d';
+        let watchlist = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
+        let socket;
+        const DateTime = luxon.DateTime;
+
+        // Initialize dashboard
+        $(document).ready(function() {
+            initializeCharts();
+            loadMarketData();
+            loadWatchlist();
+            loadTopMovers();
+            loadNewsFeed();
+            setupEventHandlers();
+            
+            // Initialize WebSocket connection
+            initializeWebSocket();
+        });
+
+        // Initialize all charts
+        function initializeCharts() {
+            renderMainChart();
+            renderPortfolioChart();
+            renderAllocationChart();
+            renderIndicatorsChart();
+            renderSectorChart();
+        }
+
+        // WebSocket connection for real-time updates
+        function initializeWebSocket() {
+            const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const wsUrl = wsScheme + window.location.host + '/ws';
+            
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established');
+                // Subscribe to watchlist symbols
+                socket.send(JSON.stringify({
+                    action: 'subscribe',
+                    symbols: watchlist.concat(['^GSPC', '^IXIC', '^DJI', '^VIX'])
+                }));
+            };
+            
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateRealTimeData(data);
+            };
+            
+            socket.onclose = function(event) {
+                if (event.wasClean) {
+                    console.log(`WebSocket connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+                } else {
+                    console.log('WebSocket connection died');
+                    // Attempt to reconnect after a delay
+                    setTimeout(initializeWebSocket, 5000);
+                }
+            };
+            
+            socket.onerror = function(error) {
+                console.log(`WebSocket error: ${error.message}`);
+            };
+        }
+
+        // Load market data
+        function loadMarketData() {
+            // In a real implementation, this would fetch from your API
+            updateLastUpdated();
+            
+            // Simulate market data updates
+            simulateMarketData();
+        }
+
+        // Simulate market data changes (for demo)
+        function simulateMarketData() {
+            // Random walk for market indices
+            const randomWalk = (current, volatility) => {
+                const change = (Math.random() - 0.5) * volatility;
+                return current * (1 + change / 100);
+            };
+            
+            // Update market indicators every 5 seconds
+            setInterval(() => {
+                const sp500 = parseFloat($('#sp500-price').text().replace(/,/g, ''));
+                const nasdaq = parseFloat($('#nasdaq-price').text().replace(/,/g, ''));
+                const dow = parseFloat($('#dow-price').text().replace(/,/g, ''));
+                const vix = parseFloat($('#vix-price').text());
+                
+                const newSP500 = randomWalk(sp500, 0.1);
+                const newNasdaq = randomWalk(nasdaq, 0.15);
+                const newDow = randomWalk(dow, 0.08);
+                const newVix = randomWalk(vix, 5);
+                
+                const sp500Change = newSP500 - sp500;
+                const nasdaqChange = newNasdaq - nasdaq;
+                const dowChange = newDow - dow;
+                const vixChange = newVix - vix;
+                
+                $('#sp500-price').text(newSP500.toLocaleString('en-US', {maximumFractionDigits: 2}));
+                $('#nasdaq-price').text(newNasdaq.toLocaleString('en-US', {maximumFractionDigits: 2}));
+                $('#dow-price').text(newDow.toLocaleString('en-US', {maximumFractionDigits: 2}));
+                $('#vix-price').text(newVix.toFixed(2));
+                
+                updateChangeElement($('#sp500-change'), sp500Change, newSP500);
+                updateChangeElement($('#nasdaq-change'), nasdaqChange, newNasdaq);
+                updateChangeElement($('#dow-change'), dowChange, newDow);
+                updateChangeElement($('#vix-change'), vixChange, newVix);
+                
+                updateLastUpdated();
+            }, 5000);
+        }
+
+        // Update change elements
+        function updateChangeElement(element, change, currentValue) {
+            const percentChange = (change / (currentValue - change)) * 100;
+            const isPositive = change >= 0;
+            
+            element.text(`${isPositive ? '+' : ''}${change.toFixed(2)} (${isPositive ? '+' : ''}${percentChange.toFixed(2)}%)`);
+            element.removeClass('positive negative').addClass(isPositive ? 'positive' : 'negative');
+        }
+
+        // Load watchlist data
+        function loadWatchlist() {
+            // In a real implementation, this would fetch from your API
+            const watchlistData = [
+                { symbol: 'AAPL', name: 'Apple Inc.', price: 189.37, change: 1.23, changePercent: 0.65 },
+                { symbol: 'MSFT', name: 'Microsoft Corp.', price: 420.72, change: -2.15, changePercent: -0.51 },
+                { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 175.23, change: 3.45, changePercent: 2.01 },
+                { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 185.19, change: -1.23, changePercent: -0.66 },
+                { symbol: 'TSLA', name: 'Tesla Inc.', price: 260.54, change: 5.67, changePercent: 2.23 },
+                { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 950.02, change: 12.34, changePercent: 1.32 }
+            ];
+            
+            updateWatchlist(watchlistData);
+        }
+
+        // Update watchlist display
+        function updateWatchlist(data) {
+            let html = '';
+            
+            data.forEach(stock => {
+                const isPositive = stock.change >= 0;
+                
+                html += `
+                    <div class="stock-card" data-symbol="${stock.symbol}">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="stock-price">
+                            <div class="price-value">$${stock.price.toFixed(2)}</div>
+                            <div class="price-change ${isPositive ? 'positive' : 'negative'}">
+                                ${isPositive ? '+' : ''}${stock.change.toFixed(2)} (${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%)
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#watchlist').html(html);
+            
+            // Add click handlers
+            $('.stock-card').click(function() {
+                currentSymbol = $(this).data('symbol');
+                $('#chart-title').text(`${currentSymbol} - ${$(this).find('.stock-name').text()}`);
+                renderMainChart();
+                renderIndicatorsChart();
+            });
+        }
+
+        // Load top movers
+        function loadTopMovers() {
+            // In a real implementation, this would fetch from your API
+            const gainers = [
+                { symbol: 'META', name: 'Meta Platforms', price: 485.38, change: 15.67, changePercent: 3.34 },
+                { symbol: 'AMD', name: 'Advanced Micro Devices', price: 178.23, change: 8.45, changePercent: 4.98 },
+                { symbol: 'SHOP', name: 'Shopify Inc.', price: 82.67, change: 3.89, changePercent: 4.93 }
+            ];
+            
+            const losers = [
+                { symbol: 'INTC', name: 'Intel Corp.', price: 44.12, change: -1.56, changePercent: -3.41 },
+                { symbol: 'DIS', name: 'Walt Disney Co.', price: 102.45, change: -2.34, changePercent: -2.23 },
+                { symbol: 'WBA', name: 'Walgreens Boots', price: 23.78, change: -0.89, changePercent: -3.61 }
+            ];
+            
+            updateTopMovers(gainers, losers);
+        }
+
+        // Update top movers display
+        function updateTopMovers(gainers, losers) {
+            let gainersHtml = '';
+            let losersHtml = '';
+            
+            gainers.forEach(stock => {
+                gainersHtml += `
+                    <div class="stock-card" data-symbol="${stock.symbol}">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="stock-price">
+                            <div class="price-value">$${stock.price.toFixed(2)}</div>
+                            <div class="price-change positive">
+                                +${stock.change.toFixed(2)} (+${stock.changePercent.toFixed(2)}%)
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            losers.forEach(stock => {
+                losersHtml += `
+                    <div class="stock-card" data-symbol="${stock.symbol}">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="stock-price">
+                            <div class="price-value">$${stock.price.toFixed(2)}</div>
+                            <div class="price-change negative">
+                                ${stock.change.toFixed(2)} (${stock.changePercent.toFixed(2)}%)
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#gainers-list').html(gainersHtml);
+            $('#losers-list').html(losersHtml);
+            
+            // Add click handlers
+            $('.stock-card').click(function() {
+                currentSymbol = $(this).data('symbol');
+                $('#chart-title').text(`${currentSymbol} - ${$(this).find('.stock-name').text()}`);
+                renderMainChart();
+                renderIndicatorsChart();
+            });
+        }
+
+        // Load news feed
+        function loadNewsFeed() {
+            // In a real implementation, this would fetch from your API
+            const newsItems = [
+                {
+                    title: "Fed Holds Rates Steady, Signals Possible Cuts Later This Year",
+                    source: "Financial Times",
+                    time: "2 hours ago",
+                    summary: "The Federal Reserve left interest rates unchanged but indicated that three rate cuts could come this year despite recent inflation upticks."
+                },
+                {
+                    title: "NVIDIA Unveils Next-Generation AI Chips at GTC Conference",
+                    source: "Bloomberg",
+                    time: "4 hours ago",
+                    summary: "CEO Jensen Huang announces new Blackwell GPU architecture, claiming 30x performance boost for AI workloads."
+                },
+                {
+                    title: "Tesla Raises Prices on Model Y in U.S. and Europe",
+                    source: "Reuters",
+                    time: "6 hours ago",
+                    summary: "Electric vehicle maker increases prices by $1,000 for all Model Y variants, citing inflationary pressures."
+                },
+                {
+                    title: "Apple in Talks with Google to Bring Gemini AI to iPhone",
+                    source: "Wall Street Journal",
+                    time: "8 hours ago",
+                    summary: "Potential deal would integrate Google's generative AI technology into Apple devices later this year."
+                }
+            ];
+            
+            updateNewsFeed(newsItems);
+        }
+
+        // Update news feed display
+        function updateNewsFeed(newsItems) {
+            let html = '';
+            
+            newsItems.forEach(item => {
+                html += `
+                    <div class="card" style="padding: 15px; background-color: var(--bg-darker); border: none;">
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;">
+                            ${item.source} · ${item.time}
+                        </div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">${item.title}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">
+                            ${item.summary}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#news-feed').html(html);
+        }
+
+        // Render main price chart
+        function renderMainChart() {
+            // Generate sample data based on time range
+            let data = [];
+            let count = 50;
+            let now = DateTime.now();
+            
+            // Determine interval based on time range
+            let interval = { hours: 1 };
+            if (currentTimeRange === '1w') interval = { hours: 4 };
+            if (currentTimeRange === '1m') interval = { days: 1 };
+            if (currentTimeRange === '3m') interval = { days: 2 };
+            if (currentTimeRange === '1y') interval = { days: 7 };
+            
+            // Generate timestamps
+            let current = now.minus({ [Object.keys(interval)[0]]: Object.values(interval)[0] * count });
+            for (let i = 0; i < count; i++) {
+                current = current.plus({ [Object.keys(interval)[0]]: Object.values(interval)[0] });
+                data.push({
+                    x: current.toJSDate(),
+                    y: Math.random() * 50 + 170 // Random price between 170-220
+                });
+            }
+            
+            // Create smooth line from random data
+            for (let i = 1; i < data.length; i++) {
+                data[i].y = data[i-1].y * 0.95 + data[i].y * 0.05;
+            }
+            
+            // Render chart with ApexCharts
+            const options = {
+                series: [{
+                    name: 'Price',
+                    data: data
+                }],
+                chart: {
+                    type: 'area',
+                    height: '100%',
+                    background: 'transparent',
+                    toolbar: {
+                        show: true,
+                        tools: {
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true,
+                            reset: true
+                        }
+                    },
+                    zoom: {
+                        enabled: true
+                    }
+                },
+                colors: [var(--accent-primary)],
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 2
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.7,
+                        opacityTo: 0.3,
+                        stops: [0, 90, 100]
+                    }
+                },
+                xaxis: {
+                    type: 'datetime',
+                    labels: {
+                        style: {
+                            colors: var(--text-secondary)
+                        }
+                    },
+                    axisBorder: {
+                        show: false
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            colors: var(--text-secondary)
+                        },
+                        formatter: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                },
+                tooltip: {
+                    x: {
+                        format: 'dd MMM yyyy HH:mm'
+                    }
+                },
+                grid: {
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    strokeDashArray: 4
+                }
+            };
+            
+            const chart = new ApexCharts(document.querySelector("#main-chart"), options);
+            chart.render();
+        }
+
+        // Render portfolio chart
+        function renderPortfolioChart() {
+            const options = {
+                series: [{
+                    name: 'Value',
+                    data: [125000, 127500, 126800, 128000, 127200, 128456]
+                }],
+                chart: {
+                    type: 'line',
+                    height: '100%',
+                    sparkline: {
+                        enabled: true
+                    },
+                    background: 'transparent'
+                },
+                colors: [var(--positive)],
+                stroke: {
+                    curve: 'smooth',
+                    width: 2
+                },
+                tooltip: {
+                    fixed: {
+                        enabled: false
+                    },
+                    x: {
+                        show: false
+                    },
+                    y: {
+                        formatter: function(val) {
+                            return '$' + val.toLocaleString('en-US');
+                        }
+                    }
+                }
+            };
+            
+            const chart = new ApexCharts(document.querySelector("#portfolio-chart"), options);
+            chart.render();
+        }
+
+        // Render allocation chart
+        function renderAllocationChart() {
+            const options = {
+                series: [44, 55, 13, 33, 22],
+                labels: ['Stocks', 'Bonds', 'Crypto', 'ETFs', 'Cash'],
+                chart: {
+                    type: 'donut',
+                    height: '100%',
+                    background: 'transparent'
+                },
+                colors: ['#6c5ce7', '#00cec9', '#0984e3', '#00b894', '#fd79a8'],
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        colors: var(--text-primary)
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '65%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total',
+                                    color: var(--text-secondary),
+                                    formatter: function(w) {
+                                        return '$128,456';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            const chart = new ApexCharts(document.querySelector("#allocation-chart"), options);
+            chart.render();
+        }
+
+        // Render technical indicators chart
+        function renderIndicatorsChart() {
+            // Generate sample data
+            let rsiData = [];
+            let macdData = [];
+            let volumeData = [];
+            
+            for (let i = 0; i < 30; i++) {
+                rsiData.push(Math.random() * 20 + 40); // RSI between 40-60
+                macdData.push((Math.random() - 0.5) * 3); // MACD between -1.5 to 1.5
+                volumeData.push(Math.floor(Math.random() * 5000000) + 1000000); // Volume 1M-6M
+            }
+            
+            // Create Chart.js chart
+            const ctx = document.getElementById('indicators-chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array(30).fill(''),
+                    datasets: [
+                        {
+                            label: 'RSI',
+                            type: 'line',
+                            data: rsiData,
+                            borderColor: '#00cec9',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: 'rsi'
+                        },
+                        {
+                            label: 'MACD',
+                            type: 'line',
+                            data: macdData,
+                            borderColor: '#fd79a8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: 'macd'
+                        },
+                        {
+                            label: 'Volume',
+                            data: volumeData,
+                            backgroundColor: 'rgba(108, 92, 231, 0.3)',
+                            borderColor: 'rgba(108, 92, 231, 0.8)',
+                            borderWidth: 1,
+                            yAxisID: 'volume'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: var(--text-primary)
+                            }
+                        }
+                    },
+                    scales: {
+                        rsi: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: var(--text-secondary)
+                            }
+                        },
+                        macd: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: var(--text-secondary)
+                            }
+                        },
+                        volume: {
+                            type: 'linear',
+                            display: false,
+                            min: 0
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: var(--text-secondary)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render sector performance chart
+        function renderSectorChart() {
+            const options = {
+                series: [{
+                    name: 'Performance',
+                    data: [
+                        { x: 'Technology', y: 12.3 },
+                        { x: 'Healthcare', y: 8.7 },
+                        { x: 'Financials', y: 5.4 },
+                        { x: 'Consumer Discretionary', y: 9.2 },
+                        { x: 'Communication Services', y: 15.1 },
+                        { x: 'Industrials', y: 6.8 },
+                        { x: 'Consumer Staples', y: 3.5 },
+                        { x: 'Energy', y: -2.4 },
+                        { x: 'Utilities', y: 1.2 },
+                        { x: 'Real Estate', y: -0.7 },
+                        { x: 'Materials', y: 4.1 }
+                    ]
+                }],
+                chart: {
+                    type: 'bar',
+                    height: '100%',
+                    background: 'transparent'
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 4,
+                        horizontal: true,
+                        distributed: true,
+                        barHeight: '80%'
+                    }
+                },
+                colors: function({ value }) {
+                    if (value >= 10) {
+                        return '#00b894';
+                    } else if (value >= 5) {
+                        return '#74b9ff';
+                    } else if (value >= 0) {
+                        return '#a29bfe';
+                    } else {
+                        return '#d63031';
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function(val) {
+                        return val + '%';
+                    },
+                    style: {
+                        colors: ['#fff']
+                    }
+                },
+                xaxis: {
+                    categories: ['Technology', 'Healthcare', 'Financials', 'Consumer Discretionary', 
+                                'Communication Services', 'Industrials', 'Consumer Staples', 
+                                'Energy', 'Utilities', 'Real Estate', 'Materials'],
+                    labels: {
+                        style: {
+                            colors: var(--text-secondary)
+                        }
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            colors: var(--text-secondary)
+                        }
+                    }
+                },
+                grid: {
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + '%';
+                        }
+                    }
+                }
+            };
+            
+            const chart = new ApexCharts(document.querySelector("#sector-chart"), options);
+            chart.render();
+        }
+
+        // Update real-time data from WebSocket
+        function updateRealTimeData(data) {
+            // In a real implementation, this would update specific elements
+            console.log('Real-time update:', data);
+            updateLastUpdated();
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated() {
+            const now = DateTime.now().toFormat('HH:mm:ss');
+            $('#last-updated').text(`Last updated: ${now}`);
+        }
+
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Time range buttons
+            $('.time-btn').click(function() {
+                $('.time-btn').removeClass('active');
+                $(this).addClass('active');
+                currentTimeRange = $(this).data('time');
+                renderMainChart();
+            });
+            
+            // Refresh button
+            $('#refresh-btn').click(function() {
+                loadMarketData();
+                loadWatchlist();
+                loadTopMovers();
+                loadNewsFeed();
+                updateLastUpdated();
+            });
+            
+            // Search functionality
+            $('.search-bar').on('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    const symbol = $(this).val().trim().toUpperCase();
+                    if (symbol) {
+                        currentSymbol = symbol;
+                        $('#chart-title').text(`${currentSymbol}`);
+                        renderMainChart();
+                        renderIndicatorsChart();
+                        $(this).val('');
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

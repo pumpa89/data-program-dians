@@ -1,0 +1,7 @@
+requests==2.31.0
+websocket-client==1.6.1
+kafka-python==2.0.2
+python-dotenv==1.0.0
+pandas==2.1.4
+yfinance==0.2.31
+alpha_vantage==2.3.1
